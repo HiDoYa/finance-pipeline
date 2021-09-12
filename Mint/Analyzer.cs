@@ -25,8 +25,8 @@ namespace Mint
         }
 
         public List<Transactions> GetTransactions()
-        { 
-	        List<Transactions> records = new List<Transactions>();
+        {
+            List<Transactions> records = new List<Transactions>();
             using (StreamReader reader = new StreamReader(DownloadFilePath))
             using (CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
@@ -39,7 +39,7 @@ namespace Mint
                     if (negative)
                     {
                         amount *= -1;
-		            }
+                    }
 
                     Transactions record = new Transactions
                     {
@@ -49,12 +49,12 @@ namespace Mint
                         Category = csv.GetField<string>("Category")
 
                     };
-					records.Add(record);
-		        }
-	        }
+                    records.Add(record);
+                }
+            }
 
             return records;
-    	}
+        }
 
     }
 }
