@@ -29,8 +29,8 @@ namespace Financepipeline
             {
                 string home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
                 downloadPath = Path.Join(home, ".mintapi");
-                Console.WriteLine("Saving file to: "+ downloadPath);
-	        }
+                Console.WriteLine("Saving file to: " + downloadPath);
+            }
 
             Mint.Scraper mint = new Mint.Scraper(downloadPath);
             mint.Login(username, password);

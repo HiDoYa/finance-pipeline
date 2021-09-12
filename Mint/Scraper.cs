@@ -19,38 +19,38 @@ namespace Mint
 
             ChromeOptions options = new ChromeOptions();
             if (!debug)
-            { 
-			    options.AddArguments("headless");
-		    }
+            {
+                options.AddArguments("headless");
+            }
             options.AddUserProfilePreference("download.default_directory", downloadPath);
             options.AddUserProfilePreference("download.prompt_for_download", false);
 
             _driver = new ChromeDriver(options);
             _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(5));
-	    }
+        }
 
         private void DirSetup(string downloadPath)
         {
             if (!Directory.Exists(downloadPath))
             {
                 Directory.CreateDirectory(downloadPath);
-	        }
+            }
 
             string downloadFilePath = Path.Join(downloadPath, "transactions.csv");
             if (File.Exists(downloadFilePath))
             {
                 Directory.CreateDirectory(downloadPath);
                 File.Delete(downloadFilePath);
-	        }
-		}
+            }
+        }
 
 
         private void TimeWait(double value)
-        { 
+        {
             var timestamp = DateTime.Now;
             var delay = TimeSpan.FromSeconds(value);
             _wait.Until(webdriver => (DateTime.Now - timestamp) > delay);
-		}
+        }
 
         public void Login(string username, string password)
         {
@@ -58,7 +58,7 @@ namespace Mint
 
             // Go to mint and click on sign in
             _driver.Url = "https://mint.intuit.com";
-            IWebElement signInButton =  _driver.FindElement(By.XPath("//a[@data-identifier='sign-in']"));
+            IWebElement signInButton = _driver.FindElement(By.XPath("//a[@data-identifier='sign-in']"));
             signInButton.Click();
 
             // Input email and click next
@@ -86,16 +86,16 @@ namespace Mint
         }
 
         public void DownloadTransactions()
-        { 
+        {
             if (!_loggedIn)
             {
                 throw new Exception("not logged in");
-	        }
+            }
 
             // Download file
             _driver.Url = "https://mint.intuit.com/transactionDownload.event?queryNew=&offset=0&filterType=cash&comparableType=8";
 
             TimeWait(4);
-		}
+        }
     }
 }
