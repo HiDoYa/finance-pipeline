@@ -6,7 +6,7 @@ using OpenQA.Selenium.Support.UI;
 
 namespace Mint
 {
-    public class Scraper
+    public class Scraper : IDisposable
     {
         private IWebDriver _driver;
         private WebDriverWait _wait;
@@ -20,13 +20,21 @@ namespace Mint
             ChromeOptions options = new ChromeOptions();
             if (!debug)
             {
-                options.AddArguments("headless");
+                options.AddArgument("headless");
+                options.AddArgument("no-sandbox");
             }
+
             options.AddUserProfilePreference("download.default_directory", downloadPath);
             options.AddUserProfilePreference("download.prompt_for_download", false);
 
             _driver = new ChromeDriver(options);
             _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(5));
+        }
+
+        public void Dispose()
+        {
+            Console.WriteLine("Cleaning up Selenium");
+            _driver.Quit();
         }
 
         private void DirSetup(string downloadPath)
@@ -81,7 +89,10 @@ namespace Mint
             IWebElement loginButton = _driver.FindElement(By.XPath("//input[@id='ius-sign-in-mfa-password-collection-continue-btn']"));
             loginButton.Click();
 
-            TimeWait(4);
+            // Wait until mint main page is showing
+            By mintLogoBy = By.XPath("//a[@id='logo-link']");
+            _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(mintLogoBy));
+
             _loggedIn = true;
         }
 
@@ -95,7 +106,7 @@ namespace Mint
             // Download file
             _driver.Url = "https://mint.intuit.com/transactionDownload.event?queryNew=&offset=0&filterType=cash&comparableType=8";
 
-            TimeWait(4);
+            TimeWait(5);
         }
     }
 }

@@ -15,11 +15,11 @@ namespace Mint
         public string Category { get; set; }
     }
 
-    public class Analyzer
+    public class Parser
     {
         private string DownloadFilePath;
 
-        public Analyzer(string downloadPath)
+        public Parser(string downloadPath)
         {
             DownloadFilePath = Path.Join(downloadPath, "transactions.csv");
         }
@@ -34,11 +34,9 @@ namespace Mint
                 csv.ReadHeader();
                 while (csv.Read())
                 {
-                    double amount = csv.GetField<double>("Amount");
-                    bool negative = csv.GetField<string>("Transaction Type") == "debit";
-                    if (negative)
+                    if (csv.GetField<string>("Transaction Type") == "debit")
                     {
-                        amount *= -1;
+                        continue;
                     }
 
                     Transactions record = new Transactions
@@ -56,5 +54,10 @@ namespace Mint
             return records;
         }
 
+        private bool Filter()
+        {
+
+            return false;
+        }
     }
 }
