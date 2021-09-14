@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Google.Apis.Auth" />
+    <None Remove="Google.Apis.Sheets.v4" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Auth" Version="1.55.0" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
+  </ItemGroup>
+</Project>
