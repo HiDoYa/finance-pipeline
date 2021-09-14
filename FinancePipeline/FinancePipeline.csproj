@@ -10,13 +10,11 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="MintData\" />
-    <None Remove="Selenium.WebDriver.ChromeDriver" />
-    <None Remove="Selenium.WebDriver" />
-    <None Remove="Selenium.Support" />
     <None Remove="System.CommandLine" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mint\Mint.csproj" />
+    <ProjectReference Include="..\Sheet\Sheet.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1" />

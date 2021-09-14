@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinancePipeline", "FinanceP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mint", "Mint\Mint.csproj", "{20AB0374-26F9-48C9-A09E-D86002F2D6B5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sheet", "Sheet\Sheet.csproj", "{FA2DEB53-95AA-4053-81AC-D2741BBF61B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{20AB0374-26F9-48C9-A09E-D86002F2D6B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20AB0374-26F9-48C9-A09E-D86002F2D6B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20AB0374-26F9-48C9-A09E-D86002F2D6B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA2DEB53-95AA-4053-81AC-D2741BBF61B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA2DEB53-95AA-4053-81AC-D2741BBF61B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA2DEB53-95AA-4053-81AC-D2741BBF61B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA2DEB53-95AA-4053-81AC-D2741BBF61B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

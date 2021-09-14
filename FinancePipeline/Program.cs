@@ -32,12 +32,17 @@ namespace Financepipeline
                 Console.WriteLine("Saving file to: " + downloadPath);
             }
 
-            Mint.Scraper mint = new Mint.Scraper(downloadPath);
-            mint.Login(username, password);
-            mint.DownloadTransactions();
+            using (Mint.Scraper mint = new Mint.Scraper(downloadPath, debug: true))
+            {
+                mint.Login(username, password);
+                mint.DownloadTransactions();
+            }
 
-            Mint.Analyzer analyzer = new Mint.Analyzer(downloadPath);
-            var transactions = analyzer.GetTransactions();
+            Mint.Parser parser = new Mint.Parser(downloadPath);
+            List<Mint.Transactions> transactions = parser.GetTransactions();
+
+
+            Sheet.Sheet test = new Sheet.Sheet();
         }
     }
 }
