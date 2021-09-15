@@ -30,21 +30,13 @@ namespace Sheet
     // Sheet class reads and writes to google sheet
     public class Sheet
     {
-        public void ObjectDump(Object obj)
-        {
-            Console.WriteLine();
-            foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(obj))
-            {
-                string name = descriptor.Name;
-                object value = descriptor.GetValue(obj);
-                Console.WriteLine("{0}={1}", name, value);
-            }
-            Console.WriteLine();
-        }
+        SheetsService _service;
+        string _spreadsheetId;
 
         public Sheet(string serviceAccountCredentialFile, string spreadsheetId)
         {
             string json = File.ReadAllText(serviceAccountCredentialFile);
+            _spreadsheetId = spreadsheetId;
 
             var cr = JsonConvert.DeserializeObject<PersonalServiceAccountCred>(json); // "personal" service account credential
 
@@ -57,16 +49,26 @@ namespace Sheet
                    }
                }.FromPrivateKey(cr.private_key));
 
-            SheetsService service = new SheetsService(
+            _service = new SheetsService(
                 new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                 });
 
-            string range = "transactions!A2:E";
 
+        }
+
+        public void Update()
+        {
+            _service.Spreadsheets.BatchUpdate();
+
+        }
+
+        public string GetLastUpdatedTime()
+        {
+            string range = "transactions!A2:E";
             SpreadsheetsResource.ValuesResource.GetRequest request =
-                    service.Spreadsheets.Values.Get(spreadsheetId, range);
+                    _service.Spreadsheets.Values.Get(_spreadsheetId, range);
 
             ValueRange response = request.Execute();
 
@@ -79,6 +81,22 @@ namespace Sheet
                     Console.WriteLine("{0}, {1}, {2}, {3}, {4}", row[0], row[1], row[2], row[3], row[4]);
                 }
             }
+
+            return "";
+        }
+
+        public void SetLastUpdatedTime()
+        {
+            ValueRange valuerange = new ValueRange();
+            valuerange.MajorDimension = "ROWS";
+            valuerange.Values = new List<IList<object>>();
+            valuerange.Values.Add(new List<object>());
+            valuerange.Values[0].Add(DateTime.Now);
+
+            var req = _service.Spreadsheets.Values.Update(valuerange, _spreadsheetId, "transactions!A2");
+            req.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+
+            req.Execute();
         }
     }
 }
