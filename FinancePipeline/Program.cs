@@ -33,16 +33,18 @@ namespace Financepipeline
                 Console.WriteLine("Saving file to: " + downloadPath);
             }
 
-            using (Mint.Scraper mint = new Mint.Scraper(downloadPath, debug: true))
-            {
-                mint.Login(username, password);
-                mint.DownloadTransactions();
-            }
+            //using (Mint.Scraper mint = new Mint.Scraper(downloadPath, debug: true))
+            //{
+            //    mint.Login(username, password);
+            //    mint.DownloadTransactions();
+            //}
 
-            Mint.Parser parser = new Mint.Parser(downloadPath);
-            List<Mint.Transactions> transactions = parser.GetTransactions(filterPath);
+            //Mint.Parser parser = new Mint.Parser(downloadPath);
+            //List<Mint.Transactions> transactions = parser.GetTransactions(filterPath)
 
-            Sheet.Sheet test = new Sheet.Sheet();
+            string filepath = "/Users/hiroya.gojo/Downloads/finance-project/finance-pipeline-325808-36b341a22811.json";
+            string spreadsheetId = "1pNs9XrzAQsuizWVbvq4D5yDQ4nESZpw--V7kI6tT91E";
+            Sheet.Sheet test = new Sheet.Sheet(filepath, spreadsheetId);
         }
     }
 }
