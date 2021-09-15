@@ -24,8 +24,9 @@ namespace Mint
             DownloadFilePath = Path.Join(downloadPath, "transactions.csv");
         }
 
-        public List<Transactions> GetTransactions()
+        public List<Transactions> GetTransactions(string filterPath)
         {
+            Filter filter = new Filter(filterPath);
             List<Transactions> records = new List<Transactions>();
             using (StreamReader reader = new StreamReader(DownloadFilePath))
             using (CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture))
@@ -34,7 +35,7 @@ namespace Mint
                 csv.ReadHeader();
                 while (csv.Read())
                 {
-                    if (csv.GetField<string>("Transaction Type") == "debit")
+                    if (csv.GetField<string>("Transaction Type").ToLower() != "debit")
                     {
                         continue;
                     }
@@ -47,17 +48,19 @@ namespace Mint
                         Category = csv.GetField<string>("Category")
 
                     };
-                    records.Add(record);
+
+                    if (filter.Keep(record))
+                    {
+                        // Check if any filter replacements need to be done
+                        filter.Replace(ref record);
+
+                        // Add record
+                        records.Add(record);
+                    }
                 }
             }
 
             return records;
-        }
-
-        private bool Filter()
-        {
-
-            return false;
         }
     }
 }

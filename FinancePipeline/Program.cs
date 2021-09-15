@@ -16,14 +16,15 @@ namespace Financepipeline
             {
                 new Argument<string>("username", "Mint username"),
                 new Argument<string>("password", "Mint password"),
-                new Option<string>("--download-path", "Path to download your Mint transactions")
+                new Option<string>("--download-path", "Path to download your Mint transactions"),
+                new Option<string>("--filter-path", "Path to your filter specification in csv format")
             };
 
-            cmd.Handler = CommandHandler.Create<string, string, string>(Startup);
+            cmd.Handler = CommandHandler.Create<string, string, string, string>(Startup);
             return cmd.Invoke(args);
         }
 
-        static void Startup(string username, string password, string downloadPath)
+        static void Startup(string username, string password, string downloadPath, string filterPath)
         {
             if (downloadPath == "")
             {
@@ -39,8 +40,7 @@ namespace Financepipeline
             }
 
             Mint.Parser parser = new Mint.Parser(downloadPath);
-            List<Mint.Transactions> transactions = parser.GetTransactions();
-
+            List<Mint.Transactions> transactions = parser.GetTransactions(filterPath);
 
             Sheet.Sheet test = new Sheet.Sheet();
         }
