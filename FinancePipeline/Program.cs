@@ -2,7 +2,6 @@
 using System.IO;
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.Collections.Generic;
 
 namespace Financepipeline
 {
@@ -17,14 +16,15 @@ namespace Financepipeline
                 new Argument<string>("username", "Mint username"),
                 new Argument<string>("password", "Mint password"),
                 new Option<string>("--download-path", "Path to download your Mint transactions"),
-                new Option<string>("--filter-path", "Path to your filter specification in csv format")
+                new Option<string>("--filter-path", "Path to your filter specification in csv format"),
+                new Option<string>("--google-cred-path", "Path to your google credentials (service account)")
             };
 
-            cmd.Handler = CommandHandler.Create<string, string, string, string>(Startup);
+            cmd.Handler = CommandHandler.Create<string, string, string, string, string>(Startup);
             return cmd.Invoke(args);
         }
 
-        static void Startup(string username, string password, string downloadPath, string filterPath)
+        static void Startup(string username, string password, string downloadPath, string filterPath, string googleCredPath)
         {
             if (downloadPath == "")
             {
@@ -42,9 +42,12 @@ namespace Financepipeline
             //Mint.Parser parser = new Mint.Parser(downloadPath);
             //List<Mint.Transactions> transactions = parser.GetTransactions(filterPath)
 
-            string filepath = "/Users/hiroya.gojo/Downloads/finance-project/finance-pipeline-325808-36b341a22811.json";
             string spreadsheetId = "1pNs9XrzAQsuizWVbvq4D5yDQ4nESZpw--V7kI6tT91E";
-            Sheet.Sheet test = new Sheet.Sheet(filepath, spreadsheetId);
+            Sheet.Sheet test = new Sheet.Sheet(googleCredPath, spreadsheetId);
+
+            test.CreateNewSpreadsheet("Testasdf");
+            test.SetLastUpdatedTime();
+            Console.WriteLine(test.GetLastUpdatedTime());
         }
     }
 }

@@ -38,7 +38,7 @@ namespace Sheet
             string json = File.ReadAllText(serviceAccountCredentialFile);
             _spreadsheetId = spreadsheetId;
 
-            var cr = JsonConvert.DeserializeObject<PersonalServiceAccountCred>(json); // "personal" service account credential
+            var cr = JsonConvert.DeserializeObject<PersonalServiceAccountCred>(json);
 
             ServiceAccountCredential credential = new ServiceAccountCredential(
                new ServiceAccountCredential.Initializer(cr.client_email)
@@ -54,47 +54,89 @@ namespace Sheet
                 {
                     HttpClientInitializer = credential,
                 });
-
-
         }
 
         public void Update()
         {
-            _service.Spreadsheets.BatchUpdate();
+            // TODO
+            var updateCellReq = new UpdateCellsRequest()
+            {
+                Fields = "*"
+            };
 
+            var batchUpdateReq = new BatchUpdateSpreadsheetRequest()
+            {
+                Requests = new List<Request>()
+                {
+                    new Request() {
+                        UpdateCells = updateCellReq
+                    }
+                }
+            };
+
+            _service.Spreadsheets.BatchUpdate(batchUpdateReq, _spreadsheetId);
         }
 
-        public string GetLastUpdatedTime()
+        public DateTime GetLastUpdatedTime()
         {
-            string range = "transactions!A2:E";
-            SpreadsheetsResource.ValuesResource.GetRequest request =
-                    _service.Spreadsheets.Values.Get(_spreadsheetId, range);
+            string range = "transactions!B1";
+            var request = _service.Spreadsheets.Values.Get(_spreadsheetId, range);
 
             ValueRange response = request.Execute();
-
-            IList<IList<Object>> values = response.Values;
-            if (values != null && values.Count > 0)
-            {
-                foreach (var row in values)
-                {
-                    // Print columns A and E, which correspond to indices 0 and 4.
-                    Console.WriteLine("{0}, {1}, {2}, {3}, {4}", row[0], row[1], row[2], row[3], row[4]);
-                }
-            }
-
-            return "";
+            string datetimeStr = (string)response.Values[0][0];
+            return DateTime.Parse(datetimeStr);
         }
 
         public void SetLastUpdatedTime()
         {
-            ValueRange valuerange = new ValueRange();
-            valuerange.MajorDimension = "ROWS";
-            valuerange.Values = new List<IList<object>>();
-            valuerange.Values.Add(new List<object>());
-            valuerange.Values[0].Add(DateTime.Now);
+            ValueRange valueRange = new ValueRange()
+            {
+                MajorDimension = "ROWS",
+                Values = new List<IList<object>>()
+                {
+                    new List<object>() {
+                        "Last Updated:",
+                        DateTime.Now.ToString("MM/dd/yy H:mm")
+                    }
+                }
+            };
 
-            var req = _service.Spreadsheets.Values.Update(valuerange, _spreadsheetId, "transactions!A2");
+            var req = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, "transactions!A1");
             req.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+
+            req.Execute();
+        }
+
+        public void CreateSpreadsheetIfDNE(string title)
+        {
+            var test = _service.Spreadsheets.Get(_spreadsheetId).Execute();
+            Console.WriteLine(test);
+            // TODO
+
+            CreateNewSpreadsheet(title);
+        }
+
+        public void CreateNewSpreadsheet(string title)
+        {
+            var addSheetReq = new AddSheetRequest()
+            {
+                Properties = new SheetProperties()
+                {
+                    Title = title
+                }
+            };
+
+            var batchUpdateReq = new BatchUpdateSpreadsheetRequest()
+            {
+                Requests = new List<Request>()
+                {
+                    new Request() {
+                        AddSheet = addSheetReq
+                    }
+                }
+            };
+
+            var req = _service.Spreadsheets.BatchUpdate(batchUpdateReq, _spreadsheetId);
 
             req.Execute();
         }
