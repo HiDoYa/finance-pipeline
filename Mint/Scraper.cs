@@ -52,7 +52,6 @@ namespace Mint
             }
         }
 
-
         private void TimeWait(double value)
         {
             var timestamp = DateTime.Now;

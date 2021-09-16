@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
 using CsvHelper;
@@ -36,12 +34,12 @@ namespace Mint
                     switch (type.ToLower())
                     {
                         case "remove":
-                            current = csv.GetField<string>("current").ToLower();
+                            current = csv.GetField<string>("Current").ToLower();
                             _removeList.Add(current);
                             break;
                         case "rename":
-                            current = csv.GetField<string>("current").ToLower();
-                            target = csv.GetField<string>("target");
+                            current = csv.GetField<string>("Current").ToLower();
+                            target = csv.GetField<string>("Target");
                             _renameList.Add(current, target);
                             break;
                     }
