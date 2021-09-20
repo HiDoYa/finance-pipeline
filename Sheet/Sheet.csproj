@@ -7,10 +7,12 @@
   <ItemGroup>
     <None Remove="Google.Apis.Auth" />
     <None Remove="Google.Apis.Sheets.v4" />
-    <None Remove="Google.Apis.Analytics.v3" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" Version="1.55.0" />
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mint\Mint.csproj" />
   </ItemGroup>
 </Project>

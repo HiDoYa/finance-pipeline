@@ -9,7 +9,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="MintData\" />
     <None Remove="System.CommandLine" />
   </ItemGroup>
   <ItemGroup>

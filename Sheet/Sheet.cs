@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.ComponentModel;
 using System.Collections.Generic;
 
 using Google.Apis.Auth.OAuth2;
@@ -56,12 +55,50 @@ namespace Sheet
                 });
         }
 
-        public void Update()
+        private string CreateSheetConditional(Dictionary<string, string> categoryDict)
         {
-            // TODO
-            var updateCellReq = new UpdateCellsRequest()
+
+            string condition = "";
+            foreach (KeyValuePair<string, string> item in categoryDict)
             {
-                Fields = "*"
+                string temp = string.Join(",", "\"" + item.Key + "\"", "\"" + item.Value + "\"");
+                condition = string.Join(",", condition, temp);
+            }
+
+            string categoryCond = String.Format("=SWITCH(INDIRECT(ADDRESS(ROW(),COLUMN()-1)){0}, \"Uncategorized\")", condition);
+            return categoryCond;
+        }
+
+        public void Test()
+        {
+            var test = new Request();
+            //test.SetDataValidation();
+            //test.AddConditionalFormatRule();
+            //test.AppendCells.
+
+            ExtendedValue abc = new ExtendedValue()
+            {
+                StringValue = "Test"
+            };
+
+            var rowdata = new RowData()
+            {
+                Values = new List<CellData>()
+                {
+                    new CellData()
+                    {
+                        UserEnteredValue = abc
+                    }
+                }
+            };
+
+            var appendRequest = new AppendCellsRequest()
+            {
+                Fields = "*",
+                Rows = new List<RowData>()
+                {
+                    rowdata
+                }
             };
 
             var batchUpdateReq = new BatchUpdateSpreadsheetRequest()
@@ -69,20 +106,61 @@ namespace Sheet
                 Requests = new List<Request>()
                 {
                     new Request() {
-                        UpdateCells = updateCellReq
+                        AppendCells = appendRequest,
                     }
                 }
             };
 
-            _service.Spreadsheets.BatchUpdate(batchUpdateReq, _spreadsheetId);
+            SpreadsheetsResource.BatchUpdateRequest request = _service.Spreadsheets.BatchUpdate(batchUpdateReq, _spreadsheetId);
+            var response = request.Execute();
+
+        }
+
+        public void Update(List<Mint.Transactions> transactions, Dictionary<string, string> categoryDict)
+        {
+            string categoryCond = CreateSheetConditional(categoryDict);
+
+            var transactionsVals = new List<IList<object>>();
+            transactionsVals.Add(new List<object>()
+            {
+                "Date", "Description", "Sub Category", "Category", "Amount"
+            });
+
+            foreach (var transaction in transactions)
+            {
+                transactionsVals.Add(new List<object>()
+                {
+                    transaction.Date,
+                    transaction.Description,
+                    transaction.Category,
+                    categoryCond,
+                    transaction.Amount,
+                });
+            }
+
+            ValueRange valueRange = new ValueRange()
+            {
+                MajorDimension = "ROWS",
+                Values = transactionsVals
+            };
+
+            var req = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, "transactions!A1");
+            req.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+
+            req.Execute();
         }
 
         public DateTime GetLastUpdatedTime()
         {
-            string range = "transactions!B1";
+            string range = "transactions!H1";
             var request = _service.Spreadsheets.Values.Get(_spreadsheetId, range);
 
             ValueRange response = request.Execute();
+            if (response.Values == null)
+            {
+                return DateTime.MinValue;
+            }
+
             string datetimeStr = (string)response.Values[0][0];
             return DateTime.Parse(datetimeStr);
         }
@@ -101,7 +179,7 @@ namespace Sheet
                 }
             };
 
-            var req = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, "transactions!A1");
+            var req = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, "transactions!G1");
             req.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
 
             req.Execute();
@@ -109,14 +187,14 @@ namespace Sheet
 
         public void CreateSpreadsheetIfDNE(string title)
         {
-            var test = _service.Spreadsheets.Get(_spreadsheetId).Execute();
-            Console.WriteLine(test);
-            // TODO
-
-            CreateNewSpreadsheet(title);
+            var spreadsheetResource = _service.Spreadsheets.Get(_spreadsheetId).Execute();
+            if (spreadsheetResource.Sheets[0].Properties.Title != title)
+            {
+                CreateNewSpreadsheet(title);
+            }
         }
 
-        public void CreateNewSpreadsheet(string title)
+        private void CreateNewSpreadsheet(string title)
         {
             var addSheetReq = new AddSheetRequest()
             {

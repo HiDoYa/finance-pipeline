@@ -17,18 +17,18 @@ namespace Mint
 
     public class Parser
     {
-        private string DownloadFilePath;
+        private string _downloadFilePath;
 
         public Parser(string downloadPath)
         {
-            DownloadFilePath = Path.Join(downloadPath, "transactions.csv");
+            _downloadFilePath = Path.Join(downloadPath, "transactions.csv");
         }
 
         public List<Transactions> GetTransactions(string filterPath)
         {
             Filter filter = new Filter(filterPath);
             List<Transactions> records = new List<Transactions>();
-            using (StreamReader reader = new StreamReader(DownloadFilePath))
+            using (StreamReader reader = new StreamReader(_downloadFilePath))
             using (CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
                 csv.Read();
@@ -45,8 +45,7 @@ namespace Mint
                         Date = csv.GetField<string>("Date"),
                         Description = csv.GetField<string>("Original Description"),
                         Amount = csv.GetField<double>("Amount"),
-                        Category = csv.GetField<string>("Category")
-
+                        Category = csv.GetField<string>("Category"),
                     };
 
                     if (filter.Keep(record))

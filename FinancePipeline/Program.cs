@@ -2,6 +2,7 @@
 using System.IO;
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.Collections.Generic;
 
 namespace Financepipeline
 {
@@ -15,16 +16,18 @@ namespace Financepipeline
             {
                 new Argument<string>("username", "Mint username"),
                 new Argument<string>("password", "Mint password"),
+                new Option<string>("--google-cred-path", "Path to your google credentials (service account)"),
+                new Option<string>("--spreadsheet-id", "Path to Google sheet id"),
                 new Option<string>("--download-path", "Path to download your Mint transactions"),
                 new Option<string>("--filter-path", "Path to your filter specification in csv format"),
-                new Option<string>("--google-cred-path", "Path to your google credentials (service account)")
+                new Option<string>("--category-path", "Path to config for transaction categories")
             };
 
-            cmd.Handler = CommandHandler.Create<string, string, string, string, string>(Startup);
+            cmd.Handler = CommandHandler.Create<string, string, string, string, string, string, string>(Startup);
             return cmd.Invoke(args);
         }
 
-        static void Startup(string username, string password, string downloadPath, string filterPath, string googleCredPath)
+        static void Startup(string username, string password, string downloadPath, string filterPath, string googleCredPath, string spreadsheetId, string categoryPath)
         {
             if (downloadPath == "")
             {
@@ -33,21 +36,18 @@ namespace Financepipeline
                 Console.WriteLine("Saving file to: " + downloadPath);
             }
 
-            //using (Mint.Scraper mint = new Mint.Scraper(downloadPath, debug: true))
+            //using (Mint.Scraper mint = new Mint.Scraper(downloadPath))
             //{
             //    mint.Login(username, password);
             //    mint.DownloadTransactions();
             //}
 
-            //Mint.Parser parser = new Mint.Parser(downloadPath);
-            //List<Mint.Transactions> transactions = parser.GetTransactions(filterPath)
+            Mint.Categorizer categorizer = new Mint.Categorizer(categoryPath);
+            Mint.Parser parser = new Mint.Parser(downloadPath);
+            List<Mint.Transactions> transactions = parser.GetTransactions(filterPath);
 
-            string spreadsheetId = "1pNs9XrzAQsuizWVbvq4D5yDQ4nESZpw--V7kI6tT91E";
-            Sheet.Sheet test = new Sheet.Sheet(googleCredPath, spreadsheetId);
-
-            test.CreateNewSpreadsheet("Testasdf");
-            test.SetLastUpdatedTime();
-            Console.WriteLine(test.GetLastUpdatedTime());
+            var sheet = new Sheet.Sheet(googleCredPath, spreadsheetId);
+            sheet.Test();
         }
     }
 }

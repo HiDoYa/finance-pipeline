@@ -12,23 +12,24 @@ namespace Mint
         private WebDriverWait _wait;
         private bool _loggedIn;
 
-        public Scraper(string downloadPath, bool debug = false)
+        public Scraper(string downloadPath)
         {
             _loggedIn = false;
             this.DirSetup(downloadPath);
 
             ChromeOptions options = new ChromeOptions();
-            if (!debug)
-            {
-                options.AddArgument("headless");
-                options.AddArgument("no-sandbox");
-            }
+
+            //// WIP: Headless is not working correctly
+            //options.AddArgument("headless");
+            //options.AddArgument("no-sandbox");
+            //options.AddArgument("disable-dev-shm-usage");
+            //options.AddArgument("disable-gpu");
 
             options.AddUserProfilePreference("download.default_directory", downloadPath);
             options.AddUserProfilePreference("download.prompt_for_download", false);
 
             _driver = new ChromeDriver(options);
-            _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(5));
+            _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
         }
 
         public void Dispose()
@@ -89,8 +90,8 @@ namespace Mint
             loginButton.Click();
 
             // Wait until mint main page is showing
-            By mintLogoBy = By.XPath("//a[@id='logo-link']");
-            _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(mintLogoBy));
+            By mintMainBy = By.XPath("//div[@id='mintNavigation']");
+            _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(mintMainBy));
 
             _loggedIn = true;
         }
