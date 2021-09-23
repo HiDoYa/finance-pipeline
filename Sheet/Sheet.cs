@@ -31,11 +31,13 @@ namespace Sheet
     {
         SheetsService _service;
         string _spreadsheetId;
+        Dictionary<string, int> _cachedSheetId;
 
         public Sheet(string serviceAccountCredentialFile, string spreadsheetId)
         {
             string json = File.ReadAllText(serviceAccountCredentialFile);
             _spreadsheetId = spreadsheetId;
+            _cachedSheetId = new Dictionary<string, int>();
 
             var cr = JsonConvert.DeserializeObject<PersonalServiceAccountCred>(json);
 
@@ -55,9 +57,47 @@ namespace Sheet
                 });
         }
 
+        // The main method responsible for calling most other sheets functions
+        public void Update(List<Mint.Transaction> transactions, Dictionary<string, string> categoryDict)
+        {
+            string categoryCond = CreateSheetConditional(categoryDict);
+            DateTime lastUpdated = GetLastUpdatedTime();
+            Spreadsheet spreadsheetResource = GetSpreadsheetResource();
+
+            List<Request> reqList = new List<Request>();
+
+            foreach (var transaction in transactions)
+            {
+                DateTime transactionDate = DateTime.Parse(transaction.Date);
+
+                // Skip if the transaction date should've been added already
+                if (lastUpdated.CompareTo(transactionDate) > 0)
+                {
+                    continue;
+                }
+
+                string month = transactionDate.ToString("MMMM");
+                int spreadsheetId = CreateSpreadsheetIfDNE(month, ref spreadsheetResource);
+
+                ExtendedValue[] vals = new ExtendedValue[]
+                {
+                    new ExtendedValue() { StringValue = transaction.Date },
+                    new ExtendedValue() { StringValue = transaction.Description } ,
+                    new ExtendedValue() { StringValue = transaction.Category },
+                    new ExtendedValue() { FormulaValue = categoryCond },
+                    new ExtendedValue() { StringValue = transaction.Amount.ToString() },
+                };
+
+                reqList.Add(CreateAppendCellRequest(spreadsheetId, vals));
+            }
+
+            ApplyRequestList(reqList.ToArray());
+            SetLastUpdatedTime();
+        }
+
+
         private string CreateSheetConditional(Dictionary<string, string> categoryDict)
         {
-
             string condition = "";
             foreach (KeyValuePair<string, string> item in categoryDict)
             {
@@ -69,85 +109,64 @@ namespace Sheet
             return categoryCond;
         }
 
-        public void Test()
+        public int GetIdFromSheetName(string sheetName)
         {
-            var test = new Request();
-            //test.SetDataValidation();
-            //test.AddConditionalFormatRule();
-            //test.AppendCells.
-
-            ExtendedValue abc = new ExtendedValue()
+            if (_cachedSheetId.ContainsKey(sheetName))
             {
-                StringValue = "Test"
-            };
+                return _cachedSheetId[sheetName];
+            }
 
-            var rowdata = new RowData()
+            var spreadsheetResource = _service.Spreadsheets.Get(_spreadsheetId).Execute();
+            foreach (var sheet in spreadsheetResource.Sheets)
             {
-                Values = new List<CellData>()
+                if (sheet.Properties.Title == sheetName)
                 {
-                    new CellData()
-                    {
-                        UserEnteredValue = abc
-                    }
+                    int sheetId = sheet.Properties.SheetId.GetValueOrDefault();
+                    _cachedSheetId.Add(sheetName, sheetId);
+                    return sheetId;
                 }
-            };
+            }
 
-            var appendRequest = new AppendCellsRequest()
-            {
-                Fields = "*",
-                Rows = new List<RowData>()
-                {
-                    rowdata
-                }
-            };
-
-            var batchUpdateReq = new BatchUpdateSpreadsheetRequest()
-            {
-                Requests = new List<Request>()
-                {
-                    new Request() {
-                        AppendCells = appendRequest,
-                    }
-                }
-            };
-
-            SpreadsheetsResource.BatchUpdateRequest request = _service.Spreadsheets.BatchUpdate(batchUpdateReq, _spreadsheetId);
-            var response = request.Execute();
-
+            return -1;
         }
 
-        public void Update(List<Mint.Transactions> transactions, Dictionary<string, string> categoryDict)
+        public Request CreateAppendCellRequest(int sheetId, ExtendedValue[] values)
         {
-            string categoryCond = CreateSheetConditional(categoryDict);
-
-            var transactionsVals = new List<IList<object>>();
-            transactionsVals.Add(new List<object>()
+            var celldata = new List<CellData>();
+            foreach (ExtendedValue value in values)
             {
-                "Date", "Description", "Sub Category", "Category", "Amount"
-            });
-
-            foreach (var transaction in transactions)
-            {
-                transactionsVals.Add(new List<object>()
+                celldata.Add(new CellData()
                 {
-                    transaction.Date,
-                    transaction.Description,
-                    transaction.Category,
-                    categoryCond,
-                    transaction.Amount,
+                    UserEnteredValue = value
                 });
             }
 
-            ValueRange valueRange = new ValueRange()
+            var appendRequest = new AppendCellsRequest()
             {
-                MajorDimension = "ROWS",
-                Values = transactionsVals
+                SheetId = sheetId,
+                Fields = "*",
+                Rows = new List<RowData>()
+                {
+                    new RowData()
+                    {
+                        Values = celldata
+                    }
+                }
             };
 
-            var req = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, "transactions!A1");
-            req.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+            return new Request() { AppendCells = appendRequest };
+        }
 
-            req.Execute();
+        public void ApplyRequestList(Request[] requestList)
+        {
+            var batchUpdateReq = new BatchUpdateSpreadsheetRequest()
+            {
+                Requests = requestList,
+            };
+
+            SpreadsheetsResource.BatchUpdateRequest request = _service.Spreadsheets.BatchUpdate(batchUpdateReq, _spreadsheetId);
+
+            request.Execute();
         }
 
         public DateTime GetLastUpdatedTime()
@@ -165,8 +184,13 @@ namespace Sheet
             return DateTime.Parse(datetimeStr);
         }
 
-        public void SetLastUpdatedTime()
+        public void SetLastUpdatedTime(DateTime? time = null)
         {
+            if (time == null)
+            {
+                time = DateTime.Now;
+            }
+
             ValueRange valueRange = new ValueRange()
             {
                 MajorDimension = "ROWS",
@@ -174,27 +198,66 @@ namespace Sheet
                 {
                     new List<object>() {
                         "Last Updated:",
-                        DateTime.Now.ToString("MM/dd/yy H:mm")
+                        time.Value.ToString("MM/dd/yy H:mm")
                     }
                 }
             };
 
-            var req = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, "transactions!G1");
-            req.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+            var request = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, "transactions!G1");
+            request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
 
-            req.Execute();
+            request.Execute();
         }
 
-        public void CreateSpreadsheetIfDNE(string title)
+        // Spreadsheet resource is a deliberate call; an attempt to try to minimze sheet api calls
+        public Spreadsheet GetSpreadsheetResource()
         {
-            var spreadsheetResource = _service.Spreadsheets.Get(_spreadsheetId).Execute();
-            if (spreadsheetResource.Sheets[0].Properties.Title != title)
-            {
-                CreateNewSpreadsheet(title);
-            }
+            return _service.Spreadsheets.Get(_spreadsheetId).Execute();
         }
 
-        private void CreateNewSpreadsheet(string title)
+        public int CreateSpreadsheetIfDNE(string title, ref Spreadsheet spreadsheetResource)
+        {
+            bool dne = true;
+
+            foreach (var spreadsheet in spreadsheetResource.Sheets)
+            {
+                if (spreadsheet.Properties.Title == title)
+                {
+                    dne = false;
+                    break;
+                }
+            }
+
+            if (dne)
+            {
+                int spreadsheetId = CreateNewSpreadsheet(title);
+                ExtendedValue[] header = new ExtendedValue[]
+                {
+                    new ExtendedValue() { StringValue = "Date" },
+                    new ExtendedValue() { StringValue = "Description" },
+                    new ExtendedValue() { StringValue = "Sub Category" },
+                    new ExtendedValue() { StringValue = "Category" },
+                    new ExtendedValue() { StringValue = "Amount" }
+                };
+                var appendRequest = CreateAppendCellRequest(spreadsheetId, header);
+                ApplyRequestList(new Request[] { appendRequest });
+
+
+                // Dumb work around because of API call limits
+                // Update spreadsheet resource with new title
+                spreadsheetResource.Sheets.Add(new Google.Apis.Sheets.v4.Data.Sheet()
+                {
+                    Properties = new SheetProperties()
+                    {
+                        Title = title,
+                    }
+                });
+            }
+
+            return GetIdFromSheetName(title);
+        }
+
+        private int CreateNewSpreadsheet(string title)
         {
             var addSheetReq = new AddSheetRequest()
             {
@@ -214,9 +277,11 @@ namespace Sheet
                 }
             };
 
-            var req = _service.Spreadsheets.BatchUpdate(batchUpdateReq, _spreadsheetId);
+            var request = _service.Spreadsheets.BatchUpdate(batchUpdateReq, _spreadsheetId);
 
-            req.Execute();
+            request.Execute();
+
+            return GetIdFromSheetName(title);
         }
     }
 }

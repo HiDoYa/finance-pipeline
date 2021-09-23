@@ -47,13 +47,13 @@ namespace Mint
             }
         }
 
-        public bool Keep(Transactions transaction)
+        public bool Keep(Transaction transaction)
         {
             string category = transaction.Category.ToLower();
             return !(_removeList.Contains(category));
         }
 
-        public void Replace(ref Transactions transaction)
+        public void Replace(ref Transaction transaction)
         {
             string category = transaction.Category.ToLower();
             if (_renameList.ContainsKey(category))

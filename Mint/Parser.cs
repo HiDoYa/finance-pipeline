@@ -7,7 +7,7 @@ using CsvHelper;
 namespace Mint
 {
     // Only includes fields I care about
-    public class Transactions
+    public class Transaction
     {
         public string Date { get; set; }
         public string Description { get; set; }
@@ -24,10 +24,10 @@ namespace Mint
             _downloadFilePath = Path.Join(downloadPath, "transactions.csv");
         }
 
-        public List<Transactions> GetTransactions(string filterPath)
+        public List<Transaction> GetTransactions(string filterPath)
         {
             Filter filter = new Filter(filterPath);
-            List<Transactions> records = new List<Transactions>();
+            List<Transaction> records = new List<Transaction>();
             using (StreamReader reader = new StreamReader(_downloadFilePath))
             using (CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
@@ -40,7 +40,7 @@ namespace Mint
                         continue;
                     }
 
-                    Transactions record = new Transactions
+                    Transaction record = new Transaction
                     {
                         Date = csv.GetField<string>("Date"),
                         Description = csv.GetField<string>("Original Description"),
@@ -58,6 +58,8 @@ namespace Mint
                     }
                 }
             }
+
+            records.Sort((Transaction t1, Transaction t2) => DateTime.Parse(t1.Date).CompareTo(DateTime.Parse(t2.Date)));
 
             return records;
         }

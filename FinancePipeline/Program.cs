@@ -44,10 +44,10 @@ namespace Financepipeline
 
             Mint.Categorizer categorizer = new Mint.Categorizer(categoryPath);
             Mint.Parser parser = new Mint.Parser(downloadPath);
-            List<Mint.Transactions> transactions = parser.GetTransactions(filterPath);
+            List<Mint.Transaction> transactions = parser.GetTransactions(filterPath);
 
             var sheet = new Sheet.Sheet(googleCredPath, spreadsheetId);
-            sheet.Test();
+            sheet.Update(transactions, categorizer.Mapping);
         }
     }
 }
