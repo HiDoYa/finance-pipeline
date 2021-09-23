@@ -42,12 +42,13 @@ namespace Financepipeline
             //    mint.DownloadTransactions();
             //}
 
-            Mint.Categorizer categorizer = new Mint.Categorizer(categoryPath);
-            Mint.Parser parser = new Mint.Parser(downloadPath);
-            List<Mint.Transaction> transactions = parser.GetTransactions(filterPath);
+
+            var mapping = Mint.Categorizer.GetCategorizer(categoryPath);
+            Mint.Parser parser = new Mint.Parser(downloadPath, filterPath);
+            List<Mint.Transaction> transactions = parser.GetTransactions();
 
             var sheet = new Sheet.Sheet(googleCredPath, spreadsheetId);
-            sheet.Update(transactions, categorizer.Mapping);
+            sheet.Update(transactions, mapping);
         }
     }
 }

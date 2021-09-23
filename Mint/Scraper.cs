@@ -12,6 +12,7 @@ namespace Mint
         private WebDriverWait _wait;
         private bool _loggedIn;
 
+        // Setup selenium driver
         public Scraper(string downloadPath)
         {
             _loggedIn = false;
@@ -32,12 +33,14 @@ namespace Mint
             _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
         }
 
+        // Cleanup selenium driver
         public void Dispose()
         {
             Console.WriteLine("Cleaning up Selenium");
             _driver.Quit();
         }
 
+        // Create new directory for download file
         private void DirSetup(string downloadPath)
         {
             if (!Directory.Exists(downloadPath))
@@ -53,6 +56,7 @@ namespace Mint
             }
         }
 
+        // Wait for a certain amount of time
         private void TimeWait(double value)
         {
             var timestamp = DateTime.Now;
@@ -60,6 +64,7 @@ namespace Mint
             _wait.Until(webdriver => (DateTime.Now - timestamp) > delay);
         }
 
+        // Login to mint
         public void Login(string username, string password)
         {
             _driver.Manage().Cookies.DeleteAllCookies();
@@ -96,6 +101,7 @@ namespace Mint
             _loggedIn = true;
         }
 
+        // Download transactions from mint while logged in
         public void DownloadTransactions()
         {
             if (!_loggedIn)

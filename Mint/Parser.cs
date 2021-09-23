@@ -6,6 +6,7 @@ using CsvHelper;
 
 namespace Mint
 {
+    // Stores transaction data from Mint
     // Only includes fields I care about
     public class Transaction
     {
@@ -18,15 +19,19 @@ namespace Mint
     public class Parser
     {
         private string _downloadFilePath;
+        private string _filterPath;
 
-        public Parser(string downloadPath)
+        // Get downloaded file path and filter file
+        public Parser(string downloadPath, string filterPath)
         {
             _downloadFilePath = Path.Join(downloadPath, "transactions.csv");
+            _filterPath = filterPath;
         }
 
-        public List<Transaction> GetTransactions(string filterPath)
+        // Get list of transactions from downloaded file and filter them through our filter file
+        public List<Transaction> GetTransactions()
         {
-            Filter filter = new Filter(filterPath);
+            Filter filter = new Filter(_filterPath);
             List<Transaction> records = new List<Transaction>();
             using (StreamReader reader = new StreamReader(_downloadFilePath))
             using (CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture))

@@ -7,11 +7,10 @@ namespace Mint
 {
     public class Categorizer
     {
-        public Dictionary<string, string> Mapping { get; }
-
-        public Categorizer(string categoryPath)
+        // Get mapping between subcategory to category based on json
+        static public Dictionary<string, string> GetCategorizer(string categoryPath)
         {
-            Mapping = new Dictionary<string, string>();
+            var mapping = new Dictionary<string, string>();
 
             Dictionary<string, List<string>> json;
             using (StreamReader r = new StreamReader(categoryPath))
@@ -24,9 +23,11 @@ namespace Mint
             {
                 foreach (string subcategory in category.Value)
                 {
-                    Mapping.Add(subcategory, category.Key);
+                    mapping.Add(subcategory, category.Key);
                 }
             }
+
+            return mapping;
         }
     }
 }

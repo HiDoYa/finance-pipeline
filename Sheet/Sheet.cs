@@ -33,6 +33,7 @@ namespace Sheet
         string _spreadsheetId;
         Dictionary<string, int> _cachedSheetId;
 
+        // Setup service account and sheets API
         public Sheet(string serviceAccountCredentialFile, string spreadsheetId)
         {
             string json = File.ReadAllText(serviceAccountCredentialFile);
@@ -61,8 +62,11 @@ namespace Sheet
         public void Update(List<Mint.Transaction> transactions, Dictionary<string, string> categoryDict)
         {
             string categoryCond = CreateSheetConditional(categoryDict);
-            DateTime lastUpdated = GetLastUpdatedTime();
             Spreadsheet spreadsheetResource = GetSpreadsheetResource();
+
+            string metadataSheetname = "Metadata";
+            CreateSpreadsheetIfDNE(metadataSheetname, ref spreadsheetResource);
+            DateTime lastUpdated = GetLastUpdatedTime(metadataSheetname);
 
             List<Request> reqList = new List<Request>();
 
@@ -76,8 +80,8 @@ namespace Sheet
                     continue;
                 }
 
-                string month = transactionDate.ToString("MMMM");
-                int spreadsheetId = CreateSpreadsheetIfDNE(month, ref spreadsheetResource);
+                string monthYear = transactionDate.ToString("MMMM-yy");
+                int spreadsheetId = CreateSpreadsheetIfDNE(monthYear, ref spreadsheetResource);
 
                 ExtendedValue[] vals = new ExtendedValue[]
                 {
@@ -92,10 +96,10 @@ namespace Sheet
             }
 
             ApplyRequestList(reqList.ToArray());
-            SetLastUpdatedTime();
+            SetLastUpdatedTime(metadataSheetname);
         }
 
-
+        // Create conditional statement formula for sheets
         private string CreateSheetConditional(Dictionary<string, string> categoryDict)
         {
             string condition = "";
@@ -109,6 +113,7 @@ namespace Sheet
             return categoryCond;
         }
 
+        // Get id from sheet name. Use cache if available
         public int GetIdFromSheetName(string sheetName)
         {
             if (_cachedSheetId.ContainsKey(sheetName))
@@ -130,6 +135,7 @@ namespace Sheet
             return -1;
         }
 
+        // Create append cell request but don't execute it yet
         public Request CreateAppendCellRequest(int sheetId, ExtendedValue[] values)
         {
             var celldata = new List<CellData>();
@@ -157,6 +163,7 @@ namespace Sheet
             return new Request() { AppendCells = appendRequest };
         }
 
+        // Apply list of requests as batch
         public void ApplyRequestList(Request[] requestList)
         {
             var batchUpdateReq = new BatchUpdateSpreadsheetRequest()
@@ -169,9 +176,10 @@ namespace Sheet
             request.Execute();
         }
 
-        public DateTime GetLastUpdatedTime()
+        // Get last updated time
+        public DateTime GetLastUpdatedTime(string sheetName = "Metadata")
         {
-            string range = "transactions!H1";
+            string range = sheetName + "!A1";
             var request = _service.Spreadsheets.Values.Get(_spreadsheetId, range);
 
             ValueRange response = request.Execute();
@@ -184,7 +192,8 @@ namespace Sheet
             return DateTime.Parse(datetimeStr);
         }
 
-        public void SetLastUpdatedTime(DateTime? time = null)
+        // Set last updated time. If time is set, use that time.
+        public void SetLastUpdatedTime(string sheetName = "Metadata", DateTime? time = null)
         {
             if (time == null)
             {
@@ -203,7 +212,7 @@ namespace Sheet
                 }
             };
 
-            var request = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, "transactions!G1");
+            var request = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, sheetName + "!A1");
             request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
 
             request.Execute();
@@ -215,48 +224,54 @@ namespace Sheet
             return _service.Spreadsheets.Get(_spreadsheetId).Execute();
         }
 
-        public int CreateSpreadsheetIfDNE(string title, ref Spreadsheet spreadsheetResource)
+        public bool SpreadsheetExists(string title, Spreadsheet spreadsheetResource)
         {
-            bool dne = true;
-
             foreach (var spreadsheet in spreadsheetResource.Sheets)
             {
                 if (spreadsheet.Properties.Title == title)
                 {
-                    dne = false;
-                    break;
+                    return true;
                 }
             }
+            return false;
+        }
 
-            if (dne)
+        public int CreateSpreadsheetIfDNE(string title, ref Spreadsheet spreadsheetResource)
+        {
+            // Do nothing if spreadsheet already exists
+            if (SpreadsheetExists(title, spreadsheetResource))
             {
-                int spreadsheetId = CreateNewSpreadsheet(title);
-                ExtendedValue[] header = new ExtendedValue[]
-                {
+                return GetIdFromSheetName(title);
+            }
+
+            // Create new spreadsheet and write headers
+            int spreadsheetId = CreateNewSpreadsheet(title);
+            ExtendedValue[] header = new ExtendedValue[]
+            {
                     new ExtendedValue() { StringValue = "Date" },
                     new ExtendedValue() { StringValue = "Description" },
                     new ExtendedValue() { StringValue = "Sub Category" },
                     new ExtendedValue() { StringValue = "Category" },
                     new ExtendedValue() { StringValue = "Amount" }
-                };
-                var appendRequest = CreateAppendCellRequest(spreadsheetId, header);
-                ApplyRequestList(new Request[] { appendRequest });
+            };
+            var appendRequest = CreateAppendCellRequest(spreadsheetId, header);
+            ApplyRequestList(new Request[] { appendRequest });
 
 
-                // Dumb work around because of API call limits
-                // Update spreadsheet resource with new title
-                spreadsheetResource.Sheets.Add(new Google.Apis.Sheets.v4.Data.Sheet()
+            // Update spreadsheet resource with new title
+            // Dumb work around because of API call limits (essentially caching)
+            spreadsheetResource.Sheets.Add(new Google.Apis.Sheets.v4.Data.Sheet()
+            {
+                Properties = new SheetProperties()
                 {
-                    Properties = new SheetProperties()
-                    {
-                        Title = title,
-                    }
-                });
-            }
+                    Title = title,
+                }
+            });
 
             return GetIdFromSheetName(title);
         }
 
+        // Create new spreadsheet and execute it
         private int CreateNewSpreadsheet(string title)
         {
             var addSheetReq = new AddSheetRequest()

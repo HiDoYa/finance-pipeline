@@ -10,6 +10,7 @@ namespace Mint
         List<string> _removeList;
         Dictionary<string, string> _renameList;
 
+        // Parse filter file (csv)
         public Filter(string filterPath)
         {
             // Don't populate anything if filePath is null
@@ -47,12 +48,14 @@ namespace Mint
             }
         }
 
+        // Decide whether the current category should be kept
         public bool Keep(Transaction transaction)
         {
             string category = transaction.Category.ToLower();
             return !(_removeList.Contains(category));
         }
 
+        // Decide whether the current category should be replaced
         public void Replace(ref Transaction transaction)
         {
             string category = transaction.Category.ToLower();
