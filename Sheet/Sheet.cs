@@ -33,6 +33,10 @@ namespace Sheet
         string _spreadsheetId;
         Dictionary<string, int> _cachedSheetId;
 
+        // Consts
+        private const int CATEGORY_ROW = 3;
+        private const int SUBCAT_ROW = 2;
+
         // Setup service account and sheets API
         public Sheet(string serviceAccountCredentialFile, string spreadsheetId)
         {
@@ -97,8 +101,9 @@ namespace Sheet
             var categories = new List<string>(categoryDict.Keys);
             foreach (var sheetId in listOfModifiedSpreadsheets)
             {
-                reqList.Add(DataValidationRequest(sheetId, categories, 2));
-                reqList.Add(UpdateDimensionRequest(sheetId));
+                reqList.Add(DataValidationRequest(sheetId, categories, SUBCAT_ROW));
+                reqList.Add(AutoUpdateDimensionRequest(sheetId));
+                reqList.Add(UpdateDimensionRequest(sheetId, CATEGORY_ROW));
             }
 
             ApplyRequestList(reqList.ToArray());
@@ -176,7 +181,7 @@ namespace Sheet
         }
 
         // Get request to update dimensions for all columns in spreadsheet
-        private Request UpdateDimensionRequest(int sheetId, int numCols = 10)
+        private Request AutoUpdateDimensionRequest(int sheetId, int numCols = 10)
         {
             var resizeRequest = new AutoResizeDimensionsRequest()
             {
@@ -190,6 +195,28 @@ namespace Sheet
             };
 
             return new Request() { AutoResizeDimensions = resizeRequest };
+        }
+
+        // Get request to update dimension for a specific column in spreadsheet
+        private Request UpdateDimensionRequest(int sheetId, int col, int size = 120)
+        {
+            var updateRequest = new UpdateDimensionPropertiesRequest()
+            {
+                Fields = "*",
+                Range = new DimensionRange()
+                {
+                    SheetId = sheetId,
+                    Dimension = "COLUMNS",
+                    StartIndex = col,
+                    EndIndex = col + 1
+                },
+                Properties = new DimensionProperties()
+                {
+                    PixelSize = size,
+                }
+            };
+
+            return new Request() { UpdateDimensionProperties = updateRequest };
         }
 
         // Create conditional statement formula for sheets
