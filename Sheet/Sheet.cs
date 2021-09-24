@@ -255,7 +255,27 @@ namespace Sheet
                     new ExtendedValue() { StringValue = "Amount" }
             };
             var appendRequest = CreateAppendCellRequest(spreadsheetId, header);
-            ApplyRequestList(new Request[] { appendRequest });
+
+            var updateRequest = new Request()
+            {
+                UpdateSheetProperties = new UpdateSheetPropertiesRequest()
+                {
+                    Fields = "*",
+                    Properties = new SheetProperties()
+                    {
+                        Title = title,
+                        SheetId = spreadsheetId,
+                        GridProperties = new GridProperties()
+                        {
+                            FrozenRowCount = 1,
+                            RowCount = 1000,
+                            ColumnCount = 20,
+                        }
+                    }
+                }
+            };
+
+            ApplyRequestList(new Request[] { appendRequest, updateRequest });
 
 
             // Update spreadsheet resource with new title
@@ -268,7 +288,7 @@ namespace Sheet
                 }
             });
 
-            return GetIdFromSheetName(title);
+            return spreadsheetId;
         }
 
         // Create new spreadsheet and execute it
