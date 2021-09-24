@@ -65,11 +65,13 @@ namespace Sheet
             Spreadsheet spreadsheetResource = GetSpreadsheetResource();
 
             string metadataSheetname = "Metadata";
-            CreateSpreadsheetIfDNE(metadataSheetname, ref spreadsheetResource);
+            CreateSpreadsheetIfDNE(metadataSheetname, ref spreadsheetResource, true);
             DateTime lastUpdated = GetLastUpdatedTime(metadataSheetname);
 
             List<Request> reqList = new List<Request>();
+            HashSet<int> listOfModifiedSpreadsheets = new HashSet<int>();
 
+            // Add each row of transactions
             foreach (var transaction in transactions)
             {
                 DateTime transactionDate = DateTime.Parse(transaction.Date);
@@ -80,23 +82,114 @@ namespace Sheet
                     continue;
                 }
 
-                string monthYear = transactionDate.ToString("MMMM-yy");
-                int spreadsheetId = CreateSpreadsheetIfDNE(monthYear, ref spreadsheetResource);
+                string monthYear = transactionDate.ToString("MMMM yyyy");
+                int sheetId = CreateSpreadsheetIfDNE(monthYear, ref spreadsheetResource);
 
-                ExtendedValue[] vals = new ExtendedValue[]
-                {
-                    new ExtendedValue() { StringValue = transaction.Date },
-                    new ExtendedValue() { StringValue = transaction.Description } ,
-                    new ExtendedValue() { StringValue = transaction.Category },
-                    new ExtendedValue() { FormulaValue = categoryCond },
-                    new ExtendedValue() { StringValue = transaction.Amount.ToString() },
-                };
+                var vals = PopulateCellDataWithTransaction(transaction, categoryCond);
 
-                reqList.Add(CreateAppendCellRequest(spreadsheetId, vals));
+                // Set row data and format
+                reqList.Add(CreateAppendCellRequest(sheetId, vals));
+
+                listOfModifiedSpreadsheets.Add(sheetId);
+            }
+
+            // Autoresize newly added 
+            var categories = new List<string>(categoryDict.Keys);
+            foreach (var sheetId in listOfModifiedSpreadsheets)
+            {
+                reqList.Add(DataValidationRequest(sheetId, categories, 2));
+                reqList.Add(UpdateDimensionRequest(sheetId));
             }
 
             ApplyRequestList(reqList.ToArray());
             SetLastUpdatedTime(metadataSheetname);
+        }
+
+        private List<CellData> PopulateCellDataWithTransaction(Mint.Transaction transaction, string categoryCond)
+        {
+            return new List<CellData>()
+                {
+                    new CellData()
+                    {
+                        UserEnteredFormat = new CellFormat()
+                        {
+                            NumberFormat = new NumberFormat()
+                            {
+                                Type = "DATE",
+                                Pattern = "mm-dd-yyyy"
+                            }
+                        },
+                        UserEnteredValue =  new ExtendedValue() { NumberValue = DateTime.Parse(transaction.Date).ToOADate() }
+                    },
+                    new CellData() { UserEnteredValue =  new ExtendedValue() { StringValue = transaction.Description } },
+                    new CellData() { UserEnteredValue =  new ExtendedValue() { StringValue = transaction.Category } },
+                    new CellData() { UserEnteredValue =  new ExtendedValue() { FormulaValue = categoryCond } },
+                    new CellData()
+                    {
+                        UserEnteredFormat = new CellFormat()
+                        {
+                            NumberFormat = new NumberFormat()
+                            {
+                                Type = "CURRENCY"
+                            }
+                        },
+                        UserEnteredValue =  new ExtendedValue() { NumberValue = transaction.Amount }
+                    },
+                };
+
+        }
+
+        // Create data validation request for a drop down in sheets
+        private Request DataValidationRequest(int sheetId, List<string> values, int columnIndex)
+        {
+            var valueList = new List<ConditionValue>();
+            foreach (string value in values)
+            {
+                valueList.Add(new ConditionValue()
+                {
+                    UserEnteredValue = value,
+                });
+            }
+
+            var dataReq = new SetDataValidationRequest()
+            {
+                Range = new GridRange()
+                {
+                    StartRowIndex = 1,
+                    StartColumnIndex = columnIndex,
+                    EndColumnIndex = columnIndex + 1,
+                    SheetId = sheetId,
+                },
+                Rule = new DataValidationRule()
+                {
+                    Condition = new BooleanCondition()
+                    {
+                        Type = "ONE_OF_LIST",
+                        Values = valueList,
+                    },
+                    ShowCustomUi = true,
+                    InputMessage = "Select a valid sub category",
+                }
+            };
+
+            return new Request() { SetDataValidation = dataReq };
+        }
+
+        // Get request to update dimensions for all columns in spreadsheet
+        private Request UpdateDimensionRequest(int sheetId, int numCols = 10)
+        {
+            var resizeRequest = new AutoResizeDimensionsRequest()
+            {
+                Dimensions = new DimensionRange()
+                {
+                    SheetId = sheetId,
+                    StartIndex = 0,
+                    EndIndex = numCols,
+                    Dimension = "COLUMNS",
+                }
+            };
+
+            return new Request() { AutoResizeDimensions = resizeRequest };
         }
 
         // Create conditional statement formula for sheets
@@ -114,7 +207,7 @@ namespace Sheet
         }
 
         // Get id from sheet name. Use cache if available
-        public int GetIdFromSheetName(string sheetName)
+        private int GetIdFromSheetName(string sheetName)
         {
             if (_cachedSheetId.ContainsKey(sheetName))
             {
@@ -136,17 +229,8 @@ namespace Sheet
         }
 
         // Create append cell request but don't execute it yet
-        public Request CreateAppendCellRequest(int sheetId, ExtendedValue[] values)
+        private Request CreateAppendCellRequest(int sheetId, List<CellData> values)
         {
-            var celldata = new List<CellData>();
-            foreach (ExtendedValue value in values)
-            {
-                celldata.Add(new CellData()
-                {
-                    UserEnteredValue = value
-                });
-            }
-
             var appendRequest = new AppendCellsRequest()
             {
                 SheetId = sheetId,
@@ -155,7 +239,7 @@ namespace Sheet
                 {
                     new RowData()
                     {
-                        Values = celldata
+                        Values = values
                     }
                 }
             };
@@ -164,7 +248,7 @@ namespace Sheet
         }
 
         // Apply list of requests as batch
-        public void ApplyRequestList(Request[] requestList)
+        private void ApplyRequestList(Request[] requestList)
         {
             var batchUpdateReq = new BatchUpdateSpreadsheetRequest()
             {
@@ -177,9 +261,9 @@ namespace Sheet
         }
 
         // Get last updated time
-        public DateTime GetLastUpdatedTime(string sheetName = "Metadata")
+        private DateTime GetLastUpdatedTime(string sheetName = "Metadata")
         {
-            string range = sheetName + "!A1";
+            string range = sheetName + "!B1";
             var request = _service.Spreadsheets.Values.Get(_spreadsheetId, range);
 
             ValueRange response = request.Execute();
@@ -193,7 +277,7 @@ namespace Sheet
         }
 
         // Set last updated time. If time is set, use that time.
-        public void SetLastUpdatedTime(string sheetName = "Metadata", DateTime? time = null)
+        private void SetLastUpdatedTime(string sheetName = "Metadata", DateTime? time = null)
         {
             if (time == null)
             {
@@ -219,12 +303,12 @@ namespace Sheet
         }
 
         // Spreadsheet resource is a deliberate call; an attempt to try to minimze sheet api calls
-        public Spreadsheet GetSpreadsheetResource()
+        private Spreadsheet GetSpreadsheetResource()
         {
             return _service.Spreadsheets.Get(_spreadsheetId).Execute();
         }
 
-        public bool SpreadsheetExists(string title, Spreadsheet spreadsheetResource)
+        private bool SpreadsheetExists(string title, Spreadsheet spreadsheetResource)
         {
             foreach (var spreadsheet in spreadsheetResource.Sheets)
             {
@@ -236,7 +320,8 @@ namespace Sheet
             return false;
         }
 
-        public int CreateSpreadsheetIfDNE(string title, ref Spreadsheet spreadsheetResource)
+        // Wrapper for create new spreadsheet (create header, freeze header, check if already exists)
+        private int CreateSpreadsheetIfDNE(string title, ref Spreadsheet spreadsheetResource, bool blank = false)
         {
             // Do nothing if spreadsheet already exists
             if (SpreadsheetExists(title, spreadsheetResource))
@@ -244,39 +329,44 @@ namespace Sheet
                 return GetIdFromSheetName(title);
             }
 
-            // Create new spreadsheet and write headers
-            int spreadsheetId = CreateNewSpreadsheet(title);
-            ExtendedValue[] header = new ExtendedValue[]
-            {
-                    new ExtendedValue() { StringValue = "Date" },
-                    new ExtendedValue() { StringValue = "Description" },
-                    new ExtendedValue() { StringValue = "Sub Category" },
-                    new ExtendedValue() { StringValue = "Category" },
-                    new ExtendedValue() { StringValue = "Amount" }
-            };
-            var appendRequest = CreateAppendCellRequest(spreadsheetId, header);
+            // Create spreadsheet id
+            int sheetId = CreateNewSpreadsheet(title);
 
-            var updateRequest = new Request()
+            // Dictates whether spreadsheet should contain basic headers
+            if (!blank)
             {
-                UpdateSheetProperties = new UpdateSheetPropertiesRequest()
+                // Create new spreadsheet and write headers
+                var header = new List<CellData>()
                 {
-                    Fields = "*",
-                    Properties = new SheetProperties()
+                    new CellData() { UserEnteredValue= new ExtendedValue() { StringValue = "Date" } },
+                    new CellData() { UserEnteredValue= new ExtendedValue() { StringValue = "Description" } },
+                    new CellData() { UserEnteredValue= new ExtendedValue() { StringValue = "Sub Category" } },
+                    new CellData() { UserEnteredValue= new ExtendedValue() { StringValue = "Category" } },
+                    new CellData() { UserEnteredValue= new ExtendedValue() { StringValue = "Amount" } },
+                };
+                var appendRequest = CreateAppendCellRequest(sheetId, header);
+
+                // Freeze top row
+                var updateRequest = new Request()
+                {
+                    UpdateSheetProperties = new UpdateSheetPropertiesRequest()
                     {
-                        Title = title,
-                        SheetId = spreadsheetId,
-                        GridProperties = new GridProperties()
+                        Fields = "*",
+                        Properties = new SheetProperties()
                         {
-                            FrozenRowCount = 1,
-                            RowCount = 1000,
-                            ColumnCount = 20,
+                            Title = title,
+                            SheetId = sheetId,
+                            GridProperties = new GridProperties()
+                            {
+                                FrozenRowCount = 1,
+                                RowCount = 1000,
+                                ColumnCount = 20,
+                            }
                         }
                     }
-                }
-            };
-
-            ApplyRequestList(new Request[] { appendRequest, updateRequest });
-
+                };
+                ApplyRequestList(new Request[] { appendRequest, updateRequest });
+            }
 
             // Update spreadsheet resource with new title
             // Dumb work around because of API call limits (essentially caching)
@@ -288,7 +378,7 @@ namespace Sheet
                 }
             });
 
-            return spreadsheetId;
+            return sheetId;
         }
 
         // Create new spreadsheet and execute it
