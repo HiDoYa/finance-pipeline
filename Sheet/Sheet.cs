@@ -86,7 +86,7 @@ namespace Sheet
                     continue;
                 }
 
-                string monthYear = transactionDate.ToString("MMMM yyyy");
+                string monthYear = transactionDate.ToString("MMM yy");
                 int sheetId = CreateSpreadsheetIfDNE(monthYear, ref spreadsheetResource);
 
                 var vals = PopulateCellDataWithTransaction(transaction, categoryCond);
@@ -277,6 +277,11 @@ namespace Sheet
         // Apply list of requests as batch
         private void ApplyRequestList(Request[] requestList)
         {
+            if (requestList.Length == 0)
+            {
+                return;
+            }
+
             var batchUpdateReq = new BatchUpdateSpreadsheetRequest()
             {
                 Requests = requestList,
