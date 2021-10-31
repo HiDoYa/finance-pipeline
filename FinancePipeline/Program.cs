@@ -10,8 +10,6 @@ namespace Financepipeline
     {
         static int Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-
             var cmd = new RootCommand
             {
                 new Argument<string>("username", "Mint username"),
@@ -20,14 +18,15 @@ namespace Financepipeline
                 new Option<string>("--spreadsheet-id", "Path to Google sheet id"),
                 new Option<string>("--download-path", "Path to download your Mint transactions"),
                 new Option<string>("--filter-path", "Path to your filter specification in csv format"),
-                new Option<string>("--category-path", "Path to config for transaction categories")
+                new Option<string>("--category-path", "Path to config for transaction categories"),
+                new Option<string>("--driver-path", "Path to chrome driver")
             };
 
-            cmd.Handler = CommandHandler.Create<string, string, string, string, string, string, string>(Startup);
+            cmd.Handler = CommandHandler.Create<string, string, string, string, string, string, string, string>(Startup);
             return cmd.Invoke(args);
         }
 
-        static void Startup(string username, string password, string downloadPath, string filterPath, string googleCredPath, string spreadsheetId, string categoryPath)
+        static void Startup(string username, string password, string downloadPath, string filterPath, string googleCredPath, string spreadsheetId, string categoryPath, string driverPath)
         {
             if (downloadPath == "")
             {
@@ -36,7 +35,7 @@ namespace Financepipeline
                 Console.WriteLine("Saving file to: " + downloadPath);
             }
 
-            using (Mint.Scraper mint = new Mint.Scraper(downloadPath))
+            using (Mint.Scraper mint = new Mint.Scraper(downloadPath, driverPath))
             {
                 mint.Login(username, password);
                 mint.DownloadTransactions();

@@ -13,7 +13,7 @@ namespace Mint
         private bool _loggedIn;
 
         // Setup selenium driver
-        public Scraper(string downloadPath)
+        public Scraper(string downloadPath, string driverPath)
         {
             _loggedIn = false;
             this.DirSetup(downloadPath);
@@ -29,8 +29,8 @@ namespace Mint
             options.AddUserProfilePreference("download.default_directory", downloadPath);
             options.AddUserProfilePreference("download.prompt_for_download", false);
 
-            _driver = new ChromeDriver(options);
-            _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
+            _driver = new ChromeDriver(driverPath, options);
+            _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(30));
         }
 
         // Cleanup selenium driver
