@@ -19,26 +19,28 @@ namespace Financepipeline
                 new Option<string>("--download-path", "Path to download your Mint transactions"),
                 new Option<string>("--filter-path", "Path to your filter specification in csv format"),
                 new Option<string>("--category-path", "Path to config for transaction categories"),
-                new Option<string>("--driver-path", "Path to chrome driver")
+                new Option<string>("--driver-path", "Path to chrome driver"),
+                new Option<string>("--mfa-secret", "MFA secret for one time password")
             };
 
-            cmd.Handler = CommandHandler.Create<string, string, string, string, string, string, string, string>(Startup);
+            cmd.Handler = CommandHandler.Create<string, string, string, string, string, string, string, string, string>(Startup);
             return cmd.Invoke(args);
         }
 
         static void Startup(string username, string password, string downloadPath, string filterPath,
-                            string googleCredPath, string spreadsheetId, string categoryPath, string driverPath)
+                            string googleCredPath, string spreadsheetId, string categoryPath, string driverPath,
+                            string mfaSecret)
         {
             if (downloadPath == "")
             {
                 string home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
                 downloadPath = Path.Join(home, ".mintapi");
-                Console.WriteLine("Saving file to: " + downloadPath);
             }
+            Console.WriteLine("Saving file to: " + downloadPath);
 
             using (Mint.Scraper mint = new(downloadPath, driverPath))
             {
-                mint.Login(username, password);
+                mint.Login(username, password, mfaSecret);
                 mint.DownloadTransactions();
             }
 
@@ -51,6 +53,7 @@ namespace Financepipeline
 
             var sheets = sheet.GetSheets();
             parser.BatchRangeToCSV(sheets);
+
         }
     }
 }

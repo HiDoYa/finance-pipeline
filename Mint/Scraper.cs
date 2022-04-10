@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using OtpNet;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
@@ -21,16 +22,16 @@ namespace Mint
             ChromeOptions options = new ChromeOptions();
 
             //// WIP: Headless is not working correctly
-            //options.AddArgument("headless");
-            //options.AddArgument("no-sandbox");
-            //options.AddArgument("disable-dev-shm-usage");
-            //options.AddArgument("disable-gpu");
+            options.AddArgument("headless");
+            options.AddArgument("no-sandbox");
+            options.AddArgument("disable-dev-shm-usage");
+            options.AddArgument("disable-gpu");
 
             options.AddUserProfilePreference("download.default_directory", downloadPath);
             options.AddUserProfilePreference("download.prompt_for_download", false);
 
             _driver = new ChromeDriver(driverPath, options);
-            _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(30));
+            _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
         }
 
         // Cleanup selenium driver
@@ -64,8 +65,17 @@ namespace Mint
             _wait.Until(webdriver => (DateTime.Now - timestamp) > delay);
         }
 
+
+        private string GenerateMFACode(string mfaSecret)
+        {
+            byte[] secretKey = Base32Encoding.ToBytes(mfaSecret);
+            Totp totp = new Totp(secretKey);
+            string totpCode = totp.ComputeTotp();
+            return totpCode;
+        }
+
         // Login to mint
-        public void Login(string username, string password)
+        public void Login(string username, string password, string mfaSecret)
         {
             _driver.Manage().Cookies.DeleteAllCookies();
 
@@ -93,6 +103,18 @@ namespace Mint
 
             IWebElement loginButton = _driver.FindElement(By.XPath("//input[@id='ius-sign-in-mfa-password-collection-continue-btn']"));
             loginButton.Click();
+
+            // Handle MFA
+            string code = GenerateMFACode(mfaSecret);
+            By mfaFieldBy = By.XPath("//input[@id='iux-mfa-soft-token-verification-code']");
+            _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(mfaFieldBy));
+            IWebElement mfaField = _driver.FindElement(mfaFieldBy);
+            mfaField.Click();
+            mfaField.SendKeys(code);
+
+            By mfaSubmitBy = By.XPath("//button[@data-testid='VerifySoftTokenSubmitButton']");
+            IWebElement mfaSubmit = _driver.FindElement(mfaSubmitBy);
+            mfaSubmit.Click();
 
             // Wait until mint main page is showing
             By mintMainBy = By.XPath("//div[@id='mintNavigation']");
