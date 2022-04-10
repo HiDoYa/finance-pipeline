@@ -81,7 +81,7 @@ namespace Mint
             emailField.Click();
             emailField.SendKeys(username);
 
-            IWebElement emailNext = _driver.FindElement(By.XPath("//button[@id='ius-sign-in-submit-btn']"));
+            IWebElement emailNext = _driver.FindElement(By.XPath("//button[@id='ius-identifier-first-submit-btn']"));
             emailNext.Click();
 
             // Input password and click next

@@ -18,22 +18,14 @@ namespace Mint
 
     public class Parser
     {
-        private string _downloadFilePath;
-        private string _filterPath;
-
-        // Get downloaded file path and filter file
-        public Parser(string downloadPath, string filterPath)
-        {
-            _downloadFilePath = Path.Join(downloadPath, "transactions.csv");
-            _filterPath = filterPath;
-        }
-
         // Get list of transactions from downloaded file and filter them through our filter file
-        public List<Transaction> GetTransactions()
+        public List<Transaction> GetTransactions(string downloadPath, string filterPath)
         {
-            Filter filter = new Filter(_filterPath);
+            var downloadFilePath = Path.Join(downloadPath, "transactions.csv");
+
+            Filter filter = new Filter(filterPath);
             List<Transaction> records = new List<Transaction>();
-            using (StreamReader reader = new StreamReader(_downloadFilePath))
+            using (StreamReader reader = new StreamReader(downloadFilePath))
             using (CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
                 csv.Read();
@@ -67,6 +59,12 @@ namespace Mint
             records.Sort((Transaction t1, Transaction t2) => DateTime.Parse(t1.Date).CompareTo(DateTime.Parse(t2.Date)));
 
             return records;
+        }
+
+        public String BatchRangeToCSV(List<String> sheets)
+        {
+            // TODO
+            return "A";
         }
     }
 }

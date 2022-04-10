@@ -26,7 +26,8 @@ namespace Financepipeline
             return cmd.Invoke(args);
         }
 
-        static void Startup(string username, string password, string downloadPath, string filterPath, string googleCredPath, string spreadsheetId, string categoryPath, string driverPath)
+        static void Startup(string username, string password, string downloadPath, string filterPath,
+                            string googleCredPath, string spreadsheetId, string categoryPath, string driverPath)
         {
             if (downloadPath == "")
             {
@@ -35,18 +36,21 @@ namespace Financepipeline
                 Console.WriteLine("Saving file to: " + downloadPath);
             }
 
-            using (Mint.Scraper mint = new Mint.Scraper(downloadPath, driverPath))
+            using (Mint.Scraper mint = new(downloadPath, driverPath))
             {
                 mint.Login(username, password);
                 mint.DownloadTransactions();
             }
 
-            var mapping = Mint.Categorizer.GetCategorizer(categoryPath);
-            Mint.Parser parser = new Mint.Parser(downloadPath, filterPath);
-            List<Mint.Transaction> transactions = parser.GetTransactions();
+            Dictionary<string, string> mapping = Mint.Categorizer.GetCategorizer(categoryPath);
+            Mint.Parser parser = new Mint.Parser();
+            List<Mint.Transaction> transactions = parser.GetTransactions(downloadPath, filterPath);
 
             var sheet = new Sheet.Sheet(googleCredPath, spreadsheetId);
             sheet.Update(transactions, mapping);
+
+            var sheets = sheet.GetSheets();
+            parser.BatchRangeToCSV(sheets);
         }
     }
 }

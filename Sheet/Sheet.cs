@@ -62,6 +62,41 @@ namespace Sheet
                 });
         }
 
+        // Get all sheets
+        public List<String> GetSheets()
+        {
+            var request = _service.Spreadsheets.Values.BatchGet(_spreadsheetId);
+            var sheetNames = GetSheetNames();
+            var ranges = new List<String>();
+            foreach (var sheetName in sheetNames)
+            {
+                if (sheetName == "Metadata")
+                {
+                    continue;
+                }
+
+                ranges.Add(sheetName + "!A:E");
+            }
+
+            request.Ranges = ranges;
+            BatchGetValuesResponse response = request.Execute();
+
+            var sheets = new List<String>();
+            foreach (var valRanges in response.ValueRanges)
+            {
+                foreach (var row in valRanges.Values)
+                {
+                    foreach (var val in row)
+                    {
+                        sheets.Add((string)val);
+                    }
+                }
+            }
+
+            return sheets;
+        }
+
+
         // The main method responsible for calling most other sheets functions
         public void Update(List<Mint.Transaction> transactions, Dictionary<string, string> categoryDict)
         {
@@ -233,6 +268,20 @@ namespace Sheet
             return categoryCond;
         }
 
+        // Get a list of sheet names
+        private List<String> GetSheetNames()
+        {
+            List<String> results = new List<string>();
+
+            var spreadsheetResource = _service.Spreadsheets.Get(_spreadsheetId).Execute();
+            foreach (var sheet in spreadsheetResource.Sheets)
+            {
+                results.Add(sheet.Properties.Title);
+            }
+
+            return results;
+        }
+
         // Get id from sheet name. Use cache if available
         private int GetIdFromSheetName(string sheetName)
         {
@@ -328,7 +377,7 @@ namespace Sheet
                 }
             };
 
-            var request = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, sheetName + "!A1");
+            SpreadsheetsResource.ValuesResource.UpdateRequest request = _service.Spreadsheets.Values.Update(valueRange, _spreadsheetId, sheetName + "!A1");
             request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
 
             request.Execute();
