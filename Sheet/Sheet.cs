@@ -63,7 +63,7 @@ namespace Sheet
         }
 
         // Get all sheets
-        public List<String> GetSheets()
+        public List<List<String>> GetSheets()
         {
             var request = _service.Spreadsheets.Values.BatchGet(_spreadsheetId);
             var sheetNames = GetSheetNames();
@@ -81,15 +81,18 @@ namespace Sheet
             request.Ranges = ranges;
             BatchGetValuesResponse response = request.Execute();
 
-            var sheets = new List<String>();
+            var sheets = new List<List<String>>();
             foreach (var valRanges in response.ValueRanges)
             {
                 foreach (var row in valRanges.Values)
                 {
+                    var temp = new List<string>();
                     foreach (var val in row)
                     {
-                        sheets.Add((string)val);
+                        temp.Add((string)val);
                     }
+
+                    sheets.Add(temp);
                 }
             }
 
@@ -121,8 +124,8 @@ namespace Sheet
                     continue;
                 }
 
-                string monthYear = transactionDate.ToString("MMM yy");
-                int sheetId = CreateSpreadsheetIfDNE(monthYear, ref spreadsheetResource);
+                string year = transactionDate.ToString("yyyy");
+                int sheetId = CreateSpreadsheetIfDNE(year, ref spreadsheetResource);
 
                 var vals = PopulateCellDataWithTransaction(transaction, categoryCond);
 

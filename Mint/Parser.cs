@@ -61,11 +61,39 @@ namespace Mint
             return records;
         }
 
-        public String BatchRangeToCSV(List<String> sheets)
+        public List<String> BatchRangeToCSV(List<List<String>> sheets)
         {
-            // TODO
-            Console.WriteLine(sheets);
-            return "A";
+            var csvDoc = new List<string>();
+            foreach (var sheet in sheets)
+            {
+                // Remove header
+                if (sheet[0] == "Date")
+                {
+                    continue;
+                }
+
+                var line = SingleCommaSepLine(sheet);
+                csvDoc.Add(line);
+            }
+            return csvDoc;
+        }
+
+        private String SingleCommaSepLine(List<String> elements)
+        {
+            var res = "";
+
+            for (int i = 0; i < elements.Count; i++)
+            {
+                var curElement = elements[i];
+                curElement = curElement.Replace(",", "");
+                res += curElement;
+                if (i != elements.Count - 1)
+                {
+                    res += ",";
+                }
+            }
+
+            return res;
         }
     }
 }

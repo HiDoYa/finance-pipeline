@@ -8,11 +8,13 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols></DebugSymbols>
+  </PropertyGroup>
   <ItemGroup>
     <None Remove="System.CommandLine" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Mint\Mint.csproj" />
     <ProjectReference Include="..\Sheet\Sheet.csproj" />
     <ProjectReference Include="..\Grapher\Grapher.csproj" />
   </ItemGroup>
