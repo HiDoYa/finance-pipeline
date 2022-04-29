@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import copy
 import sys
+import os
 
 colors = ['b', 'r', 'g', 'c', 'm', 'y', 'k']
 
@@ -137,12 +138,15 @@ def main():
     category_map = group_by_month_category(
         transactions, unique_months)
 
+    if not os.path.exists("images"):
+        os.makedirs("images")
+
     for key in category_map:
         new_category_map = remove_all_keys_except(category_map, key)
         graph_by_month_category(
-            new_category_map, unique_months, key.lower() + ".jpg")
+            new_category_map, unique_months, f"images/{key.lower()}.jpg")
 
-    graph_by_month_category(category_map, unique_months, "all.jpg")
+    graph_by_month_category(category_map, unique_months, "images/all.jpg")
 
 
 main()
