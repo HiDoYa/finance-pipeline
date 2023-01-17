@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,12 +15,12 @@
     <None Remove="Otp.NET" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Selenium.WebDriver" Version="4.1.0" />
-    <PackageReference Include="Selenium.Support" Version="4.1.0" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.3.0" />
+    <PackageReference Include="Selenium.Support" Version="4.3.0" />
     <PackageReference Include="DotNetSeleniumExtras.WaitHelpers" Version="3.11.0" />
-    <PackageReference Include="CsvHelper" Version="27.2.1" />
-    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="95.0.4638.5400" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="CsvHelper" Version="28.0.1" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="104.0.5112.2900-beta" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2-beta1" />
     <PackageReference Include="Otp.NET" Version="1.2.2" />
   </ItemGroup>
 </Project>

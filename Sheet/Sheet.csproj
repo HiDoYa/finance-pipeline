@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,8 +9,8 @@
     <None Remove="Google.Apis.Sheets.v4" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Apis.Auth" Version="1.55.0" />
-    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.57.0" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.57.0.2720" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mint\Mint.csproj" />

@@ -1,6 +1,6 @@
 # Finance Pipeline
 
-Currently a **WIP**
+This project has been deprecated due to Mint changes.
 
 Personal applications for gathering transactional data from Mint, analyzing, and displaying it (in a way that I think is more useful that Mint).
 

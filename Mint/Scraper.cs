@@ -21,8 +21,7 @@ namespace Mint
 
             ChromeOptions options = new ChromeOptions();
 
-            //// WIP: Headless is not working correctly
-            options.AddArgument("headless");
+            //options.AddArgument("headless");
             options.AddArgument("no-sandbox");
             options.AddArgument("disable-dev-shm-usage");
             options.AddArgument("disable-gpu");
@@ -81,7 +80,9 @@ namespace Mint
 
             // Go to mint and click on sign in
             _driver.Url = "https://mint.intuit.com";
-            IWebElement signInButton = _driver.FindElement(By.XPath("//a[@data-identifier='sign-in']"));
+            By signInButtonBy = By.XPath("//a[@data-identifier='sign-in']");
+            _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(signInButtonBy));
+            IWebElement signInButton = _driver.FindElement(signInButtonBy);
             signInButton.Click();
 
             // Input email and click next
@@ -95,7 +96,7 @@ namespace Mint
             emailNext.Click();
 
             // Input password and click next
-            By passwordFieldBy = By.XPath("//input[@id='ius-sign-in-mfa-password-collection-current-password']");
+            By passwordFieldBy = By.XPath("//input[@id='iux-password-confirmation-password']");
             _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(passwordFieldBy));
             IWebElement passwordField = _driver.FindElement(passwordFieldBy);
             passwordField.Click();
@@ -117,7 +118,7 @@ namespace Mint
             mfaSubmit.Click();
 
             // Wait until mint main page is showing
-            By mintMainBy = By.XPath("//div[@id='mintNavigation']");
+            By mintMainBy = By.XPath("//div[@id='main-content']");
             _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(mintMainBy));
 
             _loggedIn = true;
@@ -131,8 +132,19 @@ namespace Mint
                 throw new Exception("not logged in");
             }
 
+            _driver.Url = "https://mint.intuit.com/transactions";
+
+            // Open settings
+            By settingsBy = By.XPath("//button[@data-automation-id='TRANSACTION_SETTINGS']");
+            _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(settingsBy));
+            IWebElement settingsSubmit = _driver.FindElement(settingsBy);
+            settingsSubmit.Click();
+
             // Download file
-            _driver.Url = "https://mint.intuit.com/transactionDownload.event?queryNew=&offset=0&filterType=cash&comparableType=8";
+            By downloadTransactionsBy = By.XPath("//li[@data-automation-id='EXPORT_ALL_TRANSACTIONS']");
+            _wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.VisibilityOfAllElementsLocatedBy(downloadTransactionsBy));
+            IWebElement downloadTransactionsSubmit = _driver.FindElement(downloadTransactionsBy);
+            downloadTransactionsSubmit.Click();
 
             TimeWait(5);
         }
